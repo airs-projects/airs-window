@@ -1,0 +1,15 @@
+[package]
+name = "airs-window"
+version = "0.1.0"
+edition = "2024"
+description = "Window and wgpu context layer for AIRS"
+license = "Apache-2.0"
+readme = "README.md"
+
+[dependencies]
+anyhow = "1"
+pollster = "0.4"
+thiserror = "2"
+tracing = "0.1"
+wgpu = "29"
+winit = "0.30"
