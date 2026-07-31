@@ -168,7 +168,7 @@ impl<'window> WgpuContext<'window> {
         }
         render(&view, &mut encoder).map_err(|e| Error::User(e.into()))?;
         self.queue.submit([encoder.finish()]);
-        surface_texture.present();
+        self.queue.present(surface_texture);
         Ok(())
     }
 }
@@ -358,6 +358,7 @@ fn create_adapter(
             power_preference: wgpu::PowerPreference::HighPerformance,
             compatible_surface: Some(surface),
             force_fallback_adapter: false,
+            apply_limit_buckets: false,
         },
     ))?)
 }
