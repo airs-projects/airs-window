@@ -3,7 +3,7 @@ use std::{ops::Deref, sync::Arc};
 use winit::{
     event::WindowEvent,
     event_loop::ActiveEventLoop,
-    window::{Window, WindowAttributes},
+    window::{CursorIcon, Window, WindowAttributes},
 };
 
 use crate::error::Error;
@@ -29,6 +29,10 @@ pub trait WgpuWindowHandler {
     fn close(&mut self, _wgpu_ctx: &WgpuContext<'_>) {}
 
     fn event(&mut self, _event: &WindowEvent) {}
+
+    fn cursor_icon(&self) -> CursorIcon {
+        CursorIcon::Default
+    }
 
     fn render(
         &mut self,
@@ -177,6 +181,7 @@ pub struct WgpuWindow<H = ()> {
     window: Arc<Window>,
     wgpu_context: WgpuContext<'static>,
     max_frame_rate: u32,
+    cursor_icon: CursorIcon,
     handler: H,
 }
 
@@ -193,6 +198,7 @@ impl WgpuWindow<()> {
             window,
             wgpu_context,
             max_frame_rate,
+            cursor_icon: CursorIcon::Default,
             handler: (),
         })
     }
@@ -205,6 +211,7 @@ impl WgpuWindow<()> {
             window: self.window,
             wgpu_context: self.wgpu_context,
             max_frame_rate: self.max_frame_rate,
+            cursor_icon: self.cursor_icon,
             handler,
         };
         window.request_redraw();
@@ -263,7 +270,9 @@ where
     H: WgpuWindowHandler,
 {
     fn update(&mut self) {
-        if self.handler.update() {
+        let needs_redraw = self.handler.update();
+        self.update_cursor();
+        if needs_redraw {
             self.request_redraw();
         }
     }
@@ -278,6 +287,14 @@ where
         wgpu_ctx.render(|texture_view, command_encoder| {
             self.handler.render(wgpu_ctx, texture_view, command_encoder)
         })
+    }
+
+    fn update_cursor(&mut self) {
+        let cursor_icon = self.handler.cursor_icon();
+        if self.cursor_icon != cursor_icon {
+            self.window.set_cursor(cursor_icon);
+            self.cursor_icon = cursor_icon;
+        }
     }
 }
 
@@ -310,7 +327,10 @@ where
                     event_loop.exit();
                 }
             }
-            event => self.handler.event(&event),
+            event => {
+                self.handler.event(&event);
+                self.update_cursor();
+            }
         }
     }
 }
